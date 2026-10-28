@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uji Kamera — Monitor</title>
+<style>
+body{font:16px system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#18212f;background:#f4f7fb}
+main{background:#fff;padding:22px;border:1px solid #dce3ed;border-radius:16px}
+button,input{font:inherit;padding:10px;border-radius:9px;border:1px solid #cbd5e1;margin:5px 3px 5px 0}
+button{background:#174ea6;color:white;border:0;cursor:pointer}
+video{width:100%;max-height:480px;background:#111;border-radius:12px;margin-top:12px}
+.note{background:#fff5d9;padding:12px;border-radius:10px}
+</style></head>
+<body><main>
+<h1>Uji Kamera — Monitor laptop</h1>
+<p>Masukkan kode ruang yang sama dengan halaman pengirim di HP. Video hanya tampil saat HP secara sadar memulai kamera dan mengirimkannya.</p>
+<p class="note">Gunakan hanya dengan perangkatmu sendiri atau orang yang memberi persetujuan. Siapa pun yang mengetahui kode ruang dapat mencoba menyambung, jadi pilih kode acak dan jangan membagikannya.</p>
+<label for="room">Kode ruang:</label><br>
+<input id="room" autocomplete="off" placeholder="kode yang sama dari HP">
+<button id="connect">Sambungkan monitor</button>
+<p id="status" role="status">Belum tersambung.</p>
+<video id="remote" autoplay playsinline controls></video>
+<p><a href="index.html">Kembali ke halaman HP</a></p>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+let peer,call;
+const $=id=>document.getElementById(id);
+const status=$('status');
+$('connect').onclick=()=>{
+ const room=$('room').value.trim();
+ if(!/^[a-zA-Z0-9_-]{8,64}$/.test(room)){status.textContent='Masukkan kode ruang 8–64 karakter.';return}
+ if(peer)peer.destroy();
+ peer=new Peer();
+ peer.on('open',()=>{
+  status.textContent='Mencoba menyambung ke pengirim...';
+  call=peer.call('uji-kamera-'+room,new MediaStream());
+  if(!call){status.textContent='Tidak bisa memulai koneksi. Pastikan halaman HP sudah terhubung dan kamera aktif.';return}
+  call.on('stream',s=>{$('remote').srcObject=s;status.textContent='Video diterima dari HP.'});
+  call.on('close',()=>status.textContent='Koneksi ditutup.');
+  call.on('error',e=>status.textContent='Koneksi gagal: '+e.type);
+ });
+ peer.on('error',e=>status.textContent='Koneksi gagal: '+e.type+'. Pastikan kode benar dan pengirim aktif.');
+};
+window.addEventListener('pagehide',()=>{if(call)call.close();if(peer)peer.destroy()});
+</script>
+</main></body></html>

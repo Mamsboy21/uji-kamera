@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Uji Kamera — Pengirim</title>
+<style>
+body{font:16px system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#18212f;background:#f4f7fb}
+main{background:#fff;padding:22px;border:1px solid #dce3ed;border-radius:16px}
+button,input{font:inherit;padding:10px;border-radius:9px;border:1px solid #cbd5e1;margin:5px 3px 5px 0}
+button{background:#174ea6;color:white;border:0;cursor:pointer}
+video{width:100%;max-height:360px;background:#111;border-radius:12px;margin-top:12px}
+.note{background:#fff5d9;padding:12px;border-radius:10px}
+</style></head>
+<body><main>
+<h1>Uji Kamera — HP pengirim</h1>
+<p>Demo ini hanya memulai kamera setelah kamu menekan tombol dan menyetujui izin browser. Video dikirim ke peer yang memakai kode ruang sama. Jangan bagikan kode/link ruang kepada orang lain.</p>
+<p class="note">Koneksi internet lintas jaringan membutuhkan server signaling. Untuk demo ini, signaling memakai PeerJS Cloud; ketersediaan koneksi bergantung pada jaringan. Video tidak disimpan oleh halaman ini.</p>
+<label for="room">Kode ruang privat (buat kode acak yang sulit ditebak):</label><br>
+<input id="room" autocomplete="off" placeholder="mis. hp-demo-7k2m9x">
+<button id="connect">Hubungkan ruang</button>
+<p id="status" role="status">Belum terhubung.</p>
+<button id="start" disabled>Mulai kamera & kirim video</button>
+<button id="stop" disabled>Matikan kamera</button>
+<video id="preview" autoplay playsinline muted></video>
+<p><a href="monitor.html">Buka halaman monitor laptop</a></p>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+let peer, stream, activeCall;
+const $=id=>document.getElementById(id);
+const status=$('status');
+$('connect').onclick=()=>{
+ const room=$('room').value.trim();
+ if(!/^[a-zA-Z0-9_-]{8,64}$/.test(room)){status.textContent='Masukkan kode ruang 8–64 karakter, huruf/angka/tanda - atau _.';return}
+ if(peer) peer.destroy();
+ peer=new Peer('uji-kamera-'+room);
+ peer.on('open',()=>{status.textContent='Ruang siap. Buka monitor laptop dengan kode yang sama.';$('start').disabled=false});
+ peer.on('call',call=>{if(!stream){call.close();return} call.answer(stream);activeCall=call;status.textContent='Video sedang dikirim ke monitor.'});
+ peer.on('error',e=>status.textContent='Koneksi gagal: '+e.type+'. Coba kode baru atau jaringan lain.');
+};
+$('start').onclick=async()=>{
+ if(!peer||peer.destroyed){status.textContent='Hubungkan ruang dulu.';return}
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+  $('preview').srcObject=stream;
+  $('stop').disabled=false;
+  $('start').disabled=true;
+  status.textContent='Kamera aktif; menunggu monitor tersambung.';
+  peer.on('call',call=>{call.answer(stream);activeCall=call;status.textContent='Video sedang dikirim ke monitor.'});
+ }catch(e){status.textContent='Kamera tidak aktif: '+e.message}
+};
+$('stop').onclick=()=>{
+ if(activeCall){activeCall.close();activeCall=null}
+ if(stream)stream.getTracks().forEach(t=>t.stop());
+ stream=null;$('preview').srcObject=null;$('start').disabled=false;$('stop').disabled=true;
+ status.textContent='Kamera dimatikan.';
+};
+window.addEventListener('pagehide',()=>{if(stream)stream.getTracks().forEach(t=>t.stop());if(peer)peer.destroy()});
+</script>
+</main></body></html>
