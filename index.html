@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uji Kamera iPhone</title>
+</head>
+<body>
+  <h1>Uji Kamera iPhone</h1>
+  <p>Kamera hanya aktif setelah kamu menyetujui izin Safari.</p>
+
+  <button id="start">Aktifkan kamera</button>
+  <button id="stop">Matikan kamera</button>
+  <p id="status">Kamera belum aktif.</p>
+
+  <video id="preview" autoplay playsinline
+    muted style="width:100%;max-width:480px"></video>
+
+  <script>
+    const video = document.getElementById('preview');
+    const status = document.getElementById('status');
+    let stream = null;
+
+    document.getElementById('start').onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+        video.srcObject = stream;
+        status.textContent = 'Kamera aktif di perangkat ini.';
+      } catch (error) {
+        status.textContent = 'Kamera tidak dapat diaktifkan: ' + error.name;
+      }
+    };
+
+    document.getElementById('stop').onclick = () => {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      video.srcObject = null;
+      status.textContent = 'Kamera sudah dimatikan.';
+    };
+  </script>
+</body>
+</html>
